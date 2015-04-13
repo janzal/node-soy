@@ -76,6 +76,14 @@ Compiler.prototype.compileTokens = function (tokens) {
   return result;
 };
 
+Compiler.prototype.escapeHtml = function (unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
 
 Compiler.prototype.compileJSDocToken_ = function (token) {
   if (this.open_commands_.length !== 0) {
@@ -198,6 +206,11 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     break;
 
   case 'print':
+    exp = this.compileVariables_(exp);
+    output = 'rendering += ' + this.escapeHtml(exp) + ';';
+    break;
+
+  case 'evilPrint':
     exp = this.compileVariables_(exp);
     output = 'rendering += ' + exp + ';';
     break;
