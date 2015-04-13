@@ -71,18 +71,10 @@ Compiler.prototype.compileTokens = function (tokens) {
       return 'goog.require("' + symbol + '");';
     }).join('\n') + '\n';
   }
+  result += 'goog.require("goog.html.SafeHtml");\n';
   result += 'goog.require("goog.array");\n\n';
   result += code_chunks.join('');
   return result;
-};
-
-Compiler.prototype.escapeHtml = function (unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 };
 
 Compiler.prototype.compileJSDocToken_ = function (token) {
@@ -206,12 +198,12 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     break;
 
   case 'print':
-    exp = this.compileVariables_(exp);
-    output = 'rendering += ' + this.escapeHtml(exp) + ';';
+    exp = this.compileVariables_(exp, true);
+    output = 'rendering += ' + exp + ';';
     break;
 
   case 'evilPrint':
-    exp = this.compileVariables_(exp);
+    exp = this.compileVariables_(exp, false);
     output = 'rendering += ' + exp + ';';
     break;
 
@@ -267,7 +259,11 @@ Compiler.prototype.compileCodeToken = function (token) {
 };
 
 
-Compiler.prototype.compileVariables_ = function (str) {
+Compiler.prototype.compileVariables_ = function (str, escapeHtml) {
+  if (typeof escapeHtml === 'undefined') {
+    escapeHtml = true;
+  }
+
   var scopes = this.scopes_;
   str = str.replace(/\$([a-zA-Z]\w*)/g, function (match, name) {
     for (var i = 0, ii = scopes.length; i < ii; ++i) {
@@ -276,7 +272,14 @@ Compiler.prototype.compileVariables_ = function (str) {
         return name;
       }
     }
-    return 'data.' + name;
+    var variableName = 'data.' + name;
+
+    if (escapeHtml) {
+      return '((typeof ' + variableName + ' === \'string\')?' +
+        'goog.html.SafeHtml.htmlEscape(' + variableName + '):' + variableName + ')';
+    }
+
+    return variableName;
   });
 
   return str;
