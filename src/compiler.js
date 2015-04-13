@@ -276,7 +276,7 @@ Compiler.prototype.compileVariables_ = function (str, escapeHtml) {
 
     if (escapeHtml) {
       return '((typeof ' + variableName + ' === \'string\')?' +
-        'goog.html.SafeHtml.htmlEscape(' + variableName + '):' + variableName + ')';
+        'goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(' + variableName + ')):' + variableName + ')';
     }
 
     return variableName;
