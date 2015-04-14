@@ -199,7 +199,7 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
 
   case 'print':
     exp = this.compileVariables_(exp);
-    output = 'rendering += goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(' + exp + '));';
+    output = 'rendering += goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(String(' + exp + ')));';
     break;
 
   case 'printWithBlessFromDevil':
