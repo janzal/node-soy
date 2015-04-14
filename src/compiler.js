@@ -198,11 +198,12 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     break;
 
   case 'print':
-    exp = this.compileVariables_(exp, true);
-    output = 'rendering += ' + exp + ';';
+    exp = this.compileVariables_(exp);
+    output = 'rendering += goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(' + exp + '));';
     break;
 
-  case 'evilPrint':
+  case 'printWithBlessFromDevil':
+  case 'dangerousPrint':
     exp = this.compileVariables_(exp, false);
     output = 'rendering += ' + exp + ';';
     break;
@@ -259,11 +260,7 @@ Compiler.prototype.compileCodeToken = function (token) {
 };
 
 
-Compiler.prototype.compileVariables_ = function (str, escapeHtml) {
-  if (typeof escapeHtml === 'undefined') {
-    escapeHtml = true;
-  }
-
+Compiler.prototype.compileVariables_ = function (str) {
   var scopes = this.scopes_;
   str = str.replace(/\$([a-zA-Z]\w*)/g, function (match, name) {
     for (var i = 0, ii = scopes.length; i < ii; ++i) {
@@ -273,11 +270,6 @@ Compiler.prototype.compileVariables_ = function (str, escapeHtml) {
       }
     }
     var variableName = 'data.' + name;
-
-    if (escapeHtml) {
-      return '((typeof ' + variableName + ' === \'string\')?' +
-        'goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(' + variableName + ')):' + variableName + ')';
-    }
 
     return variableName;
   });
