@@ -71,7 +71,6 @@ Compiler.prototype.compileTokens = function (tokens) {
       return 'goog.require("' + symbol + '");';
     }).join('\n') + '\n';
   }
-  result += 'goog.require("goog.html.SafeHtml");\n';
   result += 'goog.require("goog.array");\n\n';
   result += code_chunks.join('');
   return result;
@@ -199,7 +198,7 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
 
   case 'print':
     exp = this.compileVariables_(exp);
-    output = 'rendering += goog.html.SafeHtml.unwrap(goog.html.SafeHtml.htmlEscape(String(' + exp + ')));';
+    output = 'rendering += String(' + exp + ').replace(/(<(?!a|\\/a|strong|\\/strong|b|\\/b)([^>]+)>)/ig,"");';
     break;
 
   case 'printWithBlessFromDevil':
