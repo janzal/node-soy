@@ -210,7 +210,7 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
   case 'dump':
     compiledExp = this.compileVariables_(exp);
     escapedExp = exp.replace(/\'/g, '\\\'');
-    output = 'console.debug(\'"' + escapedExp + '"  => \' + ' + compiledExp + ');';
+    output = 'console.debug(\'"' + escapedExp + '"  =>\', ' + compiledExp + ');';
     break;
 
   case 'template':
