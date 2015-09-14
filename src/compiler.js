@@ -207,6 +207,11 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     output = 'rendering += ' + exp + ';';
     break;
 
+  case 'dump':
+    compiledExp = this.compileVariables_(exp);
+    output = 'console.debug(\'"' + exp + '"  => \' + ' + compiledExp + ');';
+    break;
+
   case 'template':
     output = exp + ' = function (data, _helpers) { var rendering = "";';
     block_command = true;
