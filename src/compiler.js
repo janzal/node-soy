@@ -213,6 +213,10 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     output = 'console.debug(\'"' + escapedExp + '"  =>\', ' + compiledExp + ');';
     break;
 
+  case 'debugger':
+    output = 'debugger;'
+    break;
+
   case 'template':
     output = exp + ' = function (data, _helpers) { var rendering = "";';
     block_command = true;
