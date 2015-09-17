@@ -39,6 +39,13 @@ describe('Compiler', function () {
       expect(html.trim()).to.equal('I am Matt, 20 years old. And you?');
     });
 
+    it('should compile a template with print', function () {
+      var js = compileTemplate('print.soy');
+      vm.runInThisContext(js);
+      var html = test.templates.Print({name: 'Matt', age: 20});
+      expect(html.trim()).to.equal('I am Matt, 20 years old. And you?');
+    });
+
     it('should compile msg command', function () {
       var js = compileTemplate('msg-command.soy');
       vm.runInThisContext(js);

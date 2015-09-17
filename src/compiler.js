@@ -150,8 +150,8 @@ Compiler.prototype.parseCommandToken_ = function (token) {
   token.command = match ? match[0] : null;
 
   if (!token.closing) {
-    var prefix_length = (token.closing ? 2 : 1) + (token.command ? token.command.length : 0);
-    token.exp = token.source.substr(prefix_length + 1)
+    var prefix_length = (token.closing ? 2 : 1) + (token.command ? token.command.length + 1: 0);
+    token.exp = token.source.substr(prefix_length)
       .trimLeft()
       .replace(/\}$/, '') || null;
   }
