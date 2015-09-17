@@ -18,47 +18,14 @@ Compiler.prototype.compileTokens = function (tokens) {
   this.provides_ = [];
   this.requires_ = [];
   this.scopes_ = [];
+  this.msgs_ = 0;
 
-  var code_chunks = tokens.map(function (token) {
-    var indentation_level = this.open_commands_.length;
-    var indentation = '';
-    for (var i = 0; i < indentation_level; ++i) {
-      indentation += '  ';
-    }
+  var code_chunks = [];
 
-    var output = '';
-    switch (token.type) {
-    case 'jsdoc':
-      output = this.compileJSDocToken_(token);
-      break;
-
-    case 'command':
-      output = this.compileCommandToken_(token);
-      break;
-
-    case 'code':
-      output = this.compileCodeToken(token);
-      break;
-
-    default:
-      throw new Error('Unknown token type: ' + token.type);
-    }
-
-    if (output === null) {
-      return '';
-    }
-
-    if (this.open_commands_.length < indentation_level) {
-      indentation_level = this.open_commands_.length;
-      indentation = '';
-      for (var i = 0; i < indentation_level; ++i) {
-        indentation += '  ';
-      }
-    }
-
-    return indentation + output + '\n';
-  }, this);
-
+  while (tokens.length) {
+    var chunk = this.compileToken_(tokens);
+    code_chunks.push(chunk);
+  }
 
   var result = '';
   if (this.provides_.length !== 0) {
@@ -75,6 +42,55 @@ Compiler.prototype.compileTokens = function (tokens) {
   result += code_chunks.join('');
   return result;
 };
+
+Compiler.prototype.compileToken_ = function (tokens) {
+  var token = tokens.shift();
+
+  var indentation_level = this.open_commands_.length;
+  var indentation = '';
+  for (var i = 0; i < indentation_level; ++i) {
+    indentation += '  ';
+  }
+
+  var output = '';
+  switch (token.type) {
+  case 'jsdoc':
+    output = this.compileJSDocToken_(token);
+    break;
+
+  case 'command':
+    token = this.parseCommandToken_(token);
+    if (token.command == 'msg') {
+      var inner_tokens = this.collectInnerTokens_(token, tokens);
+      output = this.compileMsgCommandTokens_(inner_tokens);
+    } else {
+      output = this.compileCommandToken_(token);
+    }
+    break;
+
+  case 'code':
+    output = this.compileCodeToken(token);
+    break;
+
+  default:
+    throw new Error('Unknown token type: ' + token.type);
+  }
+
+  if (output === null) {
+    return '';
+  }
+
+  if (this.open_commands_.length < indentation_level) {
+    indentation_level = this.open_commands_.length;
+    indentation = '';
+    for (var i = 0; i < indentation_level; ++i) {
+      indentation += '  ';
+    }
+  }
+
+  return indentation + output + '\n';
+};
+
 
 Compiler.prototype.compileJSDocToken_ = function (token) {
   if (this.open_commands_.length !== 0) {
@@ -120,20 +136,61 @@ Compiler.prototype.compileJSDocToken_ = function (token) {
 };
 
 
+/**
+ * Parses a command token and stores the result into its fields:
+ * – token.closing – true if the token is a closing command
+ * – token.command – a command name
+ *
+ * @param token A command token to parse.
+ * @return An updated token object.
+ */
+Compiler.prototype.parseCommandToken_ = function (token) {
+  token.closing = (token.source[1] === '/');
+  var match = token.source.substr(token.closing ? 2 : 1).match(/^[a-zA-Z]\w*/);
+  token.command = match ? match[0] : null;
+
+  if (!token.closing) {
+    var prefix_length = (token.closing ? 2 : 1) + (token.command ? token.command.length : 0);
+    token.exp = token.source.substr(prefix_length + 1)
+      .trimLeft()
+      .replace(/\}$/, '') || null;
+  }
+
+  return token;
+};
+
+
+/**
+ * Shifts tokens array until a matching closing command token is found.
+ *
+ * @param command A starting command token.
+ * @param tokens Remaining tokens array.
+ * @return Tokens found between starting and closing command tokens.
+ */
+Compiler.prototype.collectInnerTokens_ = function (token, tokens) {
+  var command = token.command;
+  var inner = [token];
+  do {
+    token = tokens.shift();
+    if (token.type == 'command') {
+      token = this.parseCommandToken_(token);
+    }
+    inner.push(token);
+  } while (token.command != command);
+  return inner;
+};
+
+
 Compiler.prototype.compileCommandToken_ = function (token) {
-  var closing = (token.source[1] === '/');
-  var match = token.source.substr(closing ? 2 : 1).match(/^[a-zA-Z]\w*/);
-  var command = match ? match[0] : null;
+  var closing = token.closing;
+  var command = token.command;
   var prefix_length = (closing ? 2 : 1) + (command ? command.length : 0);
 
   command = command || 'print';
 
   if (!closing) { // command start
     // "{" + command + "\s"
-    var exp = token.source.substr(prefix_length + 1)
-      .trimLeft()
-      .replace(/\}$/, '') || null;
-    return this.compileCommandStart_(command, exp);
+    return this.compileCommandStart_(command, token.exp);
 
   } else { // command end
     // "{/" + command + "}"
@@ -257,6 +314,174 @@ Compiler.prototype.compileCommandEnd_ = function (command) {
 
   this.open_commands_.shift();
   return output;
+};
+
+
+Compiler.prototype.compileMsgCommandTokens_ = function (tokens) {
+  var msg = this.createMsgFromTokens_(tokens);
+
+  var indentation_level = this.open_commands_.length;
+  var indentation = '';
+  for (var i = 0; i < indentation_level; ++i) {
+    indentation += '  ';
+  }
+
+  var source = this.createMsgSource_(msg);
+
+  return source + '\n' +
+    indentation + 'rendering += MSG_UNNAMED_' + msg.id + ';';
+};
+
+
+/**
+ * Parses a command token into a map of its attributes.
+ *
+ * @param token A starting command token.
+ * @return A map of attributes.
+ */
+Compiler.prototype.parseCommandAttributes_ = function (token) {
+  var source = token.source;
+  var attributes = {};
+
+  var in_key = false;
+  var in_value = false;
+  var quote = '';
+  var key = '';
+
+  var buf = '';
+  var prev = '';
+  while (source.length !== 0) {
+    var character = source[0];
+    buf += character;
+    source = source.substr(1);
+
+    switch (character) {
+    case ' ':
+      if (!in_key && !in_value) {
+        in_key = true;
+        buf = '';
+      }
+      break;
+
+    case '=':
+      if (in_key) {
+        key = buf.substr(0, buf.length - 1);
+        in_key = false;
+        in_value = true;
+        buf = '';
+      }
+      break;
+
+    case '"':
+    case "'":
+      if (in_value) {
+        if (!quote) {
+          quote = character;
+          buf = '';
+        } else if (quote == character && prev != '\\') {
+          in_value = false;
+          attributes[key] = buf.substr(0, buf.length - 1);
+          buf = '';
+          key = '';
+          quote = '';
+        }
+      }
+      break;
+    }
+
+    prev = character;
+  }
+
+  return attributes;
+};
+
+
+Compiler.prototype.getVariableName_ = function (exp) {
+  var name = null;
+  if (exp.match(/^\$[a-zA-Z0-9_]+$/)) {
+    name = exp.substr(1);
+  }
+  return name;
+};
+
+
+Compiler.prototype.createMsgFromTokens_ = function (tokens) {
+  var msg = {};
+
+  var starting = tokens.shift();
+  var ending = tokens.pop();
+
+  var attrs = this.parseCommandAttributes_(starting);
+
+  var params = {};
+
+  msg.id = this.msgs_++;
+
+  var text = '';
+  var vars = 0;
+  for (var i in tokens) {
+    var token = tokens[i];
+    switch (token.type) {
+    case 'code':
+      text += token.source;
+      break;
+
+    case 'command':
+      if (!token.command == 'print') {
+        throw new Error('Command ' + token.command + ' not supported in msg');
+      }
+      var name = this.getVariableName_(token.exp);
+      if (!name) {
+        name = 'var_' + (++vars);
+      }
+      params[name] = this.compileVariables_(token.exp);
+      text += '{$' + name + '}';
+      break;
+    }
+  }
+
+  // TODO: replace links
+
+  msg.meaning = attrs.meaning;
+  msg.desc = attrs.desc;
+  msg.text = text;
+  msg.params = params;
+
+  return msg;
+};
+
+
+Compiler.prototype.createMsgSource_ = function (msg) {
+  var indentation_level = this.open_commands_.length;
+  var indentation = '';
+  for (var i = 0; i < indentation_level; ++i) {
+    indentation += '  ';
+  }
+
+  var source = '';
+  source += '\n' + indentation + '/**\n';
+  if (msg.meaning) {
+    source += indentation + ' * @meaning ' + msg.meaning + '\n';
+  }
+  source += indentation + ' * @desc ' + msg.desc + '\n';
+  source += indentation + ' */\n';
+  source += indentation + 'var MSG_UNNAMED_' + msg.id + ' = goog.getMsg(\n';
+  source += indentation + "  '" + msg.text + "',\n";
+  source += indentation + "  {";
+
+  var first = true;
+  for (var key in msg.params) {
+    if (!first) {
+      source += ',\n   ' + indentation;
+    }
+    var value = msg.params[key];
+    source += "'" + key + "': " + value;
+    first = false;
+  }
+
+  source += "});\n";
+
+  return source;
 };
 
 

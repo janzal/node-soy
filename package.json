@@ -4,5 +4,8 @@
 
   "dependencies": {
     "jsdoc-parser": "*"
+  },
+  "devDependencies": {
+    "expect.js": "*"
   }
 }
