@@ -246,6 +246,11 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     block_command = true;
     break;
 
+  case 'elseif':
+    exp = this.compileVariables_(exp);
+    output = '} else if (' + exp + ') {';
+    break;
+
   case 'else':
     if (exp) {
       throw new Error('SyntaxError: {else} does not accept expressions.');

@@ -52,6 +52,13 @@ describe('Compiler', function () {
       var html = test.templates.MsgCommand({name: 'Matt', age: 20});
       expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a>.');
     });
+
+    it('should compile elseif command', function () {
+      var js = compileTemplate('elseif.soy');
+      vm.runInThisContext(js);
+      var html = test.templates.ElseIf({gender: 'f'});
+      expect(html.trim()).to.equal('You are girl.');
+    });
   });
 
   describe('parseCommandAttributes_', function () {
