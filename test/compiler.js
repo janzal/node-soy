@@ -50,7 +50,7 @@ describe('Compiler', function () {
       var js = compileTemplate('msg.soy');
       vm.runInThisContext(js);
       var html = test.templates.MsgCommand({name: 'Matt', age: 20});
-      expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a>.<br>What\'s your name?');
+      expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a> and <a href="http://example.org">website</a>.<br>What\'s your name?');
     });
 
     it('should compile elseif command', function () {
@@ -123,7 +123,7 @@ describe('Compiler', function () {
           command: 'msg' }
       ];
       var msg = compiler.createMsgFromTokens_(tokens);
-      expect(msg.text).to.equal('I am {$name}, {$age} years old. Check out my <a href="#">profile</a>.');
+      expect(msg.text).to.equal('I am {$name}, {$age} years old. Check out my {$startLink}profile{$endLink}.');
     });
   });
 });

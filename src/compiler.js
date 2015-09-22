@@ -445,7 +445,29 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
     }
   }
 
-  // TODO: replace links
+  // Replace breaks with placeholders
+  var br = (text.indexOf('<br>') !== -1);
+  if (br) {
+    text = text.replace(/<br>/g, '{$break}');
+    params['break'] = "'<br>'";
+  }
+
+  // Replace links with placeholders
+  var a = (text.indexOf('<a') !== -1);
+  if (a) {
+    var regex = /<a[^>]*>/g;
+    var match;
+    var i = 1;
+    var count = text.match(regex).length;
+    while ((match = regex.exec(text)) != null) {
+      var key = count > 1 ? 'startLink_' + i : 'startLink';
+      params[key] = "'" + match[0] + "'";
+      text = text.substr(0, match.index) + '{$' + key + '}' + text.substr(match.index + match[0].length);
+      text = text.replace('</a>', '{$endLink}');
+      params['endLink'] = "'</a>'";
+      i++;
+    }
+  }
 
   msg.meaning = attrs.meaning;
   msg.desc = attrs.desc;
