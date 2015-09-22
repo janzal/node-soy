@@ -461,9 +461,22 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
     var count = text.match(regex).length;
     while ((match = regex.exec(text)) != null) {
       var key = count > 1 ? 'startLink_' + i : 'startLink';
-      params[key] = "'" + match[0] + "'";
       text = text.substr(0, match.index) + '{$' + key + '}' + text.substr(match.index + match[0].length);
       text = text.replace('</a>', '{$endLink}');
+
+      // Replace variables in links
+      var tag = "'" + match[0] + "'";
+      var m;
+      var tagregex = new RegExp("{\\$.+}");
+      while ((m = tagregex.exec(tag)) != null) {
+        var name = m[0].substr(2, m[0].length - 3);
+        tag = tag.substr(0, m.index) + "' + " + params[name] + " + '" + tag.substr(m.index + m[0].length);
+        if (text.indexOf('{$' + name + '}') === -1) {
+          delete params[name];
+        }
+      }
+      params[key] = tag;
+
       params['endLink'] = "'</a>'";
       i++;
     }

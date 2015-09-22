@@ -49,7 +49,7 @@ describe('Compiler', function () {
     it('should compile msg command', function () {
       var js = compileTemplate('msg.soy');
       vm.runInThisContext(js);
-      var html = test.templates.MsgCommand({name: 'Matt', age: 20});
+      var html = test.templates.MsgCommand({name: 'Matt', age: 20, website: 'http://example.org'});
       expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a> and <a href="http://example.org">website</a>.<br>What\'s your name?');
     });
 
