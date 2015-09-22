@@ -428,7 +428,7 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
     var token = tokens[i];
     switch (token.type) {
     case 'code':
-      text += token.source;
+      text += token.source.replace("'", "\\'");
       break;
 
     case 'command':

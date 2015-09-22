@@ -47,10 +47,10 @@ describe('Compiler', function () {
     });
 
     it('should compile msg command', function () {
-      var js = compileTemplate('msg-command.soy');
+      var js = compileTemplate('msg.soy');
       vm.runInThisContext(js);
       var html = test.templates.MsgCommand({name: 'Matt', age: 20});
-      expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a>.');
+      expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a>.<br>What\'s your name?');
     });
 
     it('should compile elseif command', function () {
