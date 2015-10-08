@@ -405,6 +405,12 @@ Compiler.prototype.getVariableName_ = function (exp) {
   var name = null;
   if (exp.match(/^\$[a-zA-Z0-9_]+$/)) {
     name = exp.substr(1);
+
+    for (var i = 0; i < name.length; i++) {
+      if (i > 0 && name[i] == '_' && name.length > i + 1) {
+        name = name.substring(0, i) + name.charAt(i + 1).toUpperCase() + name.substring(i + 2);
+      }
+    }
   }
   return name;
 };

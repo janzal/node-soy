@@ -88,6 +88,24 @@ describe('Compiler', function () {
       expect(name).to.equal('name');
     });
 
+    it('should get lowerCamelCase variable name', function () {
+      var exp = '$message_description';
+      var name = compiler.getVariableName_(exp);
+      expect(name).to.equal('messageDescription');
+    });
+
+    it('should get variable name with underscore prefix', function () {
+      var exp = '$_description';
+      var name = compiler.getVariableName_(exp);
+      expect(name).to.equal('_description');
+    });
+
+    it('should get variable name with underscore postfix', function () {
+      var exp = '$description_';
+      var name = compiler.getVariableName_(exp);
+      expect(name).to.equal('description_');
+    });
+
     it('should not get variable name', function () {
       var exp = '$name && $surname';
       var name = compiler.getVariableName_(exp);
