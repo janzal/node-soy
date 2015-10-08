@@ -53,6 +53,20 @@ describe('Compiler', function () {
       expect(html.trim()).to.equal('I am Matt, 20 years old. Check out my <a href="#">profile</a> and <a href="http://example.org">website</a>.<br>What\'s your name?');
     });
 
+    it('should compile msg link command', function () {
+      var js = compileTemplate('msg-link.soy');
+      vm.runInThisContext(js);
+      var html = test.templates.MsgLinkCommand({agency_id: 42, config: {supportEmail: 'support@jollor.com'}});
+      expect(html.trim()).to.equal('You have reached your projects limit. Please <a href="/settings/agency/42" class="sidebar-add-project-notification-link">upgrade your plan</a> or contact us on <a href="mailto:support@jollor.com" class="sidebar-add-project-notification-link">support@jollor.com</a> for a custom plan.');
+    });
+
+    it('should compile msg no link command', function () {
+      var js = compileTemplate('msg-nolink.soy');
+      vm.runInThisContext(js);
+      var html = test.templates.MsgNoLinkCommand({name: 'Matt', age: 20, website: 'http://example.org'});
+      expect(html.trim()).to.equal('I am Matt, 20 years old.');
+    });
+
     it('should compile elseif command', function () {
       var js = compileTemplate('elseif.soy');
       vm.runInThisContext(js);

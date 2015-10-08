@@ -1,0 +1,8 @@
+/**
+ * A msg command template.
+ * @param {string} name
+ * @param {int} age
+ */
+{template test.templates.MsgLinkCommand}
+{msg desc="Projects limit reached"}You have reached your projects limit. Please <a href="/settings/agency/{print $agency_id}" class="sidebar-add-project-notification-link">upgrade your plan</a> or contact us on <a href="mailto:{print $config.supportEmail}" class="sidebar-add-project-notification-link">{print $config.supportEmail}</a> for a custom plan.{/msg}
+{/template}

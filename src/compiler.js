@@ -459,16 +459,17 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
   }
 
   // Replace links with placeholders
-  var a = (text.indexOf('<a') !== -1);
-  if (a) {
-    var regex = /<a[^>]*>/g;
-    var match;
-    var i = 1;
-    var count = text.match(regex).length;
-    while ((match = regex.exec(text)) != null) {
+  var regex = /<a[^>]*>/g;
+  var match;
+  var i = 1;
+  var matches = text.match(regex)
+  if (matches) {
+    var count = matches.length;
+    while (match = regex.exec(text)) {
       var key = count > 1 ? 'startLink_' + i : 'startLink';
       text = text.substr(0, match.index) + '{$' + key + '}' + text.substr(match.index + match[0].length);
       text = text.replace('</a>', '{$endLink}');
+      regex.lastIndex = 0;
 
       // Replace variables in links
       var tag = "'" + match[0] + "'";
