@@ -1,0 +1,50 @@
+/**
+ * @param {app.models.Post} post
+ */
+{template app.ui.templates.CalendarPost}
+{dump $post.picture('Hello world!')}
+{debugger}
+<div class="calendar-post calendar-{print $post.provider}-post calendar-post-{if $post.isPublished()}published{else}unpublished{/if}" data-id="{print $post.id}">
+	<div class="calendar-post-header">
+		{if $editable}
+			<div contenteditable class="calendar-post-header-time calendar-post-header-time-editable">
+				{dangerousPrint new goog.i18n.DateTimeFormat('HH:mm').format(new goog.date.DateTime())}
+			</div>
+		{else}
+			{if $post.getDate()}
+				<span class="calendar-post-header-time">{dangerousPrint new goog.i18n.DateTimeFormat('HH:mm').format($post.getDate())}</span>
+				<span class="calendar-post-header-separator"> – </span>
+			{/if}
+			<span class="calendar-post-header-state">{print $post.getState()}</span>
+		{/if}
+	</div>
+
+	{if $post.getPicture()}
+	<div class="calendar-post-media">
+		<img src="{print $post.getPicture()}">
+	</div>
+	{/if}
+
+	{if $post.video}
+	<div class="calendar-post-media">
+		<div class="post-video-thumbnail-container">
+			<video class="post-media-image post-media-video">
+				<source src="{print $post.video}" type="video/mp4">
+				{if $post.picture}<img src="{print $post.picture}">{/if}
+				<p><em>Sorry, video is not supported on your browser.</em></p>
+			</video>
+			<div class="post-video-thumbnail-overlay"></div>
+		</div>
+	</div>
+	{/if}
+
+	<div class="calendar-post-body">
+		{print $post.getHtmlBody()}
+	</div>
+
+	{if $editable}
+		<button class="form-submit-button calendar-post-submit-button">Schedule</button>
+		<a class="post-delete-action"></a>
+	{/if}
+</div>
+{/template}
