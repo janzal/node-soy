@@ -1,11 +1,14 @@
 {
   "name": "node-soy",
   "version": "0.2.0",
-
+  "scripts": {
+  	"test": "./node_modules/mocha/bin/mocha"
+  },
   "dependencies": {
     "jsdoc-parser": "*"
   },
   "devDependencies": {
+  	"mocha": "*",
     "expect.js": "*"
   }
 }
