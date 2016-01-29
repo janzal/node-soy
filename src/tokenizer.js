@@ -11,7 +11,7 @@ Tokenizer.prototype.tokenize = function (filenames) {
 
   filenames.forEach(function (filename) {
     var source = fs.readFileSync(filename, 'utf8');
-    var file_tokens = this.tokenizeSource_(filename, source);
+    var file_tokens = this.tokenizeSource_(source, filename);
     file_tokens = this.filterTokens_(file_tokens);
     tokens = tokens.concat(file_tokens);
   }, this);
@@ -20,7 +20,7 @@ Tokenizer.prototype.tokenize = function (filenames) {
 };
 
 
-Tokenizer.prototype.tokenizeSource_ = function (filename, source, callback) {
+Tokenizer.prototype.tokenizeSource_ = function (source, filename, callback) {
   var tokens = [];
 
   var in_jsdoc = false;

@@ -24,8 +24,9 @@ test = {};
 test.templates = {};
 
 function compileTemplate(file) {
-  var source = fs.readFileSync(path.resolve(__dirname, 'templates/' + file), 'utf8');
-  var tokens = tokenizer.tokenizeSource_(source);
+  var filename = path.resolve(__dirname, 'templates/' + file);
+  var source = fs.readFileSync(filename, 'utf8');
+  var tokens = tokenizer.tokenizeSource_(source, filename);
   tokens = tokenizer.filterTokens_(tokens);
   return compiler.compileTokens(tokens);
 }

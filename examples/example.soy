@@ -4,7 +4,7 @@
 {template app.ui.templates.CalendarPost}
 {dump $post.picture('Hello world!')}
 {debugger}
-{foreach $hello in}
+{foreach $hello in $otherside}
 <div class="calendar-post calendar-{print $post.provider}-post calendar-post-{if $post.isPublished()}published{else}unpublished{/if}" data-id="{print $post.id}">
 	<div class="calendar-post-header">
 		{if $editable}
