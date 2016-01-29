@@ -73,7 +73,7 @@ Compiler.prototype.compileToken_ = function (tokens) {
     break;
 
   default:
-    throw new Error('Unknown token type: ' + token.type);
+    throw new Error('Unknown token type: ' + token.type + ' ' + this.generateFileLineMessage(token));
   }
 
   if (output === null) {
@@ -94,7 +94,7 @@ Compiler.prototype.compileToken_ = function (tokens) {
 
 Compiler.prototype.compileJSDocToken_ = function (token) {
   if (this.open_commands_.length !== 0) {
-    throw new Error('Unexpected jsdoc: ' + token.source);
+    throw new Error('Unexpected jsdoc: ' + token.source + ' ' + this.generateFileLineMessage(token));
   }
 
   var comment_content = token.source.substr(2, token.source.length - 4);
@@ -190,47 +190,54 @@ Compiler.prototype.compileCommandToken_ = function (token) {
 
   if (!closing) { // command start
     // "{" + command + "\s"
-    return this.compileCommandStart_(command, token.exp);
+    return this.compileCommandStart_(command, token);
 
   } else { // command end
     // "{/" + command + "}"
     if (token.source.length > prefix_length + 1) {
       throw new Error(
-          'Syntax Error: Closing commands do not accept expressions');
+          'Syntax Error: Closing commands do not accept expressions ' + this.generateFileLineMessage(token));
     }
 
     var last_open_command = this.open_commands_[0];
     if (command !== last_open_command) {
       throw new Error(
           'Syntax Error: Unexpected closing command "' + command + '", ' +
-          '"' + last_open_command + '" has not been closed');
+          '"' + last_open_command + '" has not been closed ' + this.generateFileLineMessage(token));
     }
 
-    return this.compileCommandEnd_(command);
+    return this.compileCommandEnd_(command, token);
   }
 };
 
+Compiler.prototype.generateFileLineMessage = function (token) {
+  return '[' + token.file + ':' + token.line + ']';
+};
 
-Compiler.prototype.compileCommandStart_ = function (command, exp) {
+Compiler.prototype.compileCommandStart_ = function (command, token) {
+  var exp = token.exp;
   var output;
   var block_command = false;
 
   switch (command) {
   case 'foreach':
+    if (!exp) {
+      throw new Error('SyntaxError: Command {foreach} has no expression to evaluate ' + this.generateFileLineMessage(token));
+    }
     var exp_parts = exp.split(/\s+/);
     if (exp_parts[0][0] !== '$') {
       throw new Error(
           'Syntax Error: {foreach} command expecting a variable name ' +
-          'but got "' + exp_parts[0] + '"');
+          'but got "' + exp_parts[0] + '" ' + this.generateFileLineMessage(token));
     }
     if (exp_parts[1] !== 'in') {
       throw new Error(
-          'SyntaxError: Unexpected token "' + exp_parts[1] + '" in {foreach}');
+          'SyntaxError: Unexpected token "' + exp_parts[1] + '" in {foreach} ' + this.generateFileLineMessage(token));
     }
     if (exp_parts[2][0] !== '$') {
       throw new Error(
           'Syntax Error: {foreach} command expecting a variable name ' +
-          'but got "' + exp_parts[2] + '"');
+          'but got "' + exp_parts[2] + '" ' + this.generateFileLineMessage(token));
     }
     var source_var = this.compileVariables_(exp_parts[2]);
     output = 'if (' + source_var + ') { goog.array.forEach(' +
@@ -241,24 +248,33 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
     break;
 
   case 'if':
+    if (!exp) {
+      throw new Error('SyntaxError: Command {if} has no expression to evaluate ' + this.generateFileLineMessage(token));
+    }
     exp = this.compileVariables_(exp);
     output = 'if (' + exp + ') {';
     block_command = true;
     break;
 
   case 'elseif':
+    if (!exp) {
+      throw new Error('SyntaxError: Command {elseif} has no expression to evaluate ' + this.generateFileLineMessage(token));
+    }
     exp = this.compileVariables_(exp);
     output = '} else if (' + exp + ') {';
     break;
 
   case 'else':
     if (exp) {
-      throw new Error('SyntaxError: {else} does not accept expressions.');
+      throw new Error('SyntaxError: {else} does not accept expressions. ' + this.generateFileLineMessage(token));
     }
     output = '} else {';
     break;
 
   case 'print':
+    if (!exp) {
+      throw new Error('SyntaxError: Command {print} has no expression to evaluate ' + this.generateFileLineMessage(token));
+    }
     exp = this.compileVariables_(exp);
     output = 'rendering += String(' + exp + ').replace(/(<(?!a|\\/a|strong|\\/strong|b|\\/b)([^>]+)>)/ig,"");';
     break;
@@ -288,6 +304,9 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
       this.provides_.push(ns);
     }
     break;
+
+    default:
+      throw new Error('SyntaxError: Unknown command "' + command + '" ' + this.generateFileLineMessage(token));
   }
 
   if (block_command) {
@@ -298,7 +317,7 @@ Compiler.prototype.compileCommandStart_ = function (command, exp) {
 };
 
 
-Compiler.prototype.compileCommandEnd_ = function (command) {
+Compiler.prototype.compileCommandEnd_ = function (command, token) {
   var output;
 
   switch (command) {
@@ -314,7 +333,7 @@ Compiler.prototype.compileCommandEnd_ = function (command) {
     break;
   default:
     throw new Error(
-        'Syntax Error: Unexpected closing command "' + command + '"');
+        'Syntax Error: Unexpected closing command "' + command + '" ' + this.generateFileLineMessage(token));
   }
 
   this.open_commands_.shift();
@@ -439,7 +458,7 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
 
     case 'command':
       if (!token.command == 'print') {
-        throw new Error('Command ' + token.command + ' not supported in msg');
+        throw new Error('Command ' + token.command + ' not supported in msg ' + this.generateFileLineMessage(token));
       }
       var name = this.getVariableName_(token.exp);
       if (!name) {
@@ -459,17 +478,16 @@ Compiler.prototype.createMsgFromTokens_ = function (tokens) {
   }
 
   // Replace links with placeholders
-  var regex = /<a[^>]*>/g;
-  var match;
-  var i = 1;
-  var matches = text.match(regex)
-  if (matches) {
-    var count = matches.length;
-    while (match = regex.exec(text)) {
+  var a = (text.indexOf('<a') !== -1);
+  if (a) {
+    var regex = /<a[^>]*>/g;
+    var match;
+    var i = 1;
+    var count = text.match(regex).length;
+    while ((match = regex.exec(text)) != null) {
       var key = count > 1 ? 'startLink_' + i : 'startLink';
       text = text.substr(0, match.index) + '{$' + key + '}' + text.substr(match.index + match[0].length);
       text = text.replace('</a>', '{$endLink}');
-      regex.lastIndex = 0;
 
       // Replace variables in links
       var tag = "'" + match[0] + "'";

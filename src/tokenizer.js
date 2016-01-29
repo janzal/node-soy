@@ -11,7 +11,7 @@ Tokenizer.prototype.tokenize = function (filenames) {
 
   filenames.forEach(function (filename) {
     var source = fs.readFileSync(filename, 'utf8');
-    var file_tokens = this.tokenizeSource_(source);
+    var file_tokens = this.tokenizeSource_(filename, source);
     file_tokens = this.filterTokens_(file_tokens);
     tokens = tokens.concat(file_tokens);
   }, this);
@@ -20,15 +20,20 @@ Tokenizer.prototype.tokenize = function (filenames) {
 };
 
 
-Tokenizer.prototype.tokenizeSource_ = function (source, callback) {
+Tokenizer.prototype.tokenizeSource_ = function (filename, source, callback) {
   var tokens = [];
 
   var in_jsdoc = false;
   var in_command = false;
 
+  var line_number = 1;
+
   var buf = '';
   while (source.length !== 0) {
     var character = source[0];
+
+    if (character === '\n') line_number++;
+
     buf += character;
     source = source.substr(1);
 
@@ -36,7 +41,7 @@ Tokenizer.prototype.tokenizeSource_ = function (source, callback) {
     case '{':
       if (!in_command && !in_jsdoc) {
         if (buf.length > 1) {
-          tokens.push({ source: buf.substr(0, buf.length - 1), type: 'code' });
+          tokens.push({ source: buf.substr(0, buf.length - 1), file: filename, line: line_number, type: 'code' });
           buf = buf.substr(buf.length - 1);
         }
         in_command = true;
@@ -44,7 +49,7 @@ Tokenizer.prototype.tokenizeSource_ = function (source, callback) {
       break;
     case '}':
       if (in_command) {
-        tokens.push({ source: buf, type: 'command' });
+        tokens.push({ source: buf, file: filename, line: line_number, type: 'command' });
         in_command = false;
         buf = '';
       }
@@ -52,7 +57,7 @@ Tokenizer.prototype.tokenizeSource_ = function (source, callback) {
     }
 
     if (in_jsdoc && buf.substr(buf.length - 2) === '*/') {
-      tokens.push({ source: buf, type: 'jsdoc' });
+      tokens.push({ source: buf, line: line_number, file: filename, type: 'jsdoc' });
       in_jsdoc = false;
       buf = '';
     }
@@ -60,7 +65,7 @@ Tokenizer.prototype.tokenizeSource_ = function (source, callback) {
     if (buf.substr(buf.length - 3) === '/**') {
       if (!in_jsdoc) {
         if (buf.length > 3) {
-          tokens.push({ source: buf.substr(0, buf.length - 3), type: 'code' });
+          tokens.push({ source: buf.substr(0, buf.length - 3), file: filename, line: line_number, type: 'code' });
           buf = buf.substr(buf.length - 3);
         }
         in_jsdoc = true;
